@@ -63,21 +63,112 @@ namespace STROYGAME
         }
 
 
-        public GAMESTATE state;
-
-        public StoryTableObject[] storyModels;
+        public GAMESTATE currentstate;
+        public Stats stats;
+        public StoryModel[] storyModels;
         public StoryTableObject currentModels;
+        public int currentStoryIndex = 0;
+
+        public void ChangeState(GAMESTATE temp)
+        {
+            currentstate = temp;
+            if(currentstate == GAMESTATE.STORYSHOW)
+            {
+                StoryShow(currentStoryIndex);
+            }
+
+        }
+
+        public void StoryShow(int number)
+        {
+            StoryModel tempStoryModels = FindStoryModel(number);
+
+            //StorySystem.Instance.currentStoryModel = tempStoryModels;
+            //Story.System.Instance.CoShowText();
+        }
+
+
+        public void ApplyChoice(StoryModel.Result result)
+        {
+            switch(result .resultType)
+            {
+                case StoryModel.Result.ResultType.ChangeHp:
+                    //GameUI. Instance. UpdateHpUI()    //나중에 주석 해제
+                    
+                    ChangeStats(result);
+                    break;
+
+                case StoryModel.Result.ResultType.GotoNextStory:
+                    currentStoryIndex = result.value;       //다음이동 스토리 번호를 받아와서 실행
+                    ChangeState(GAMESTATE.STORYSHOW);
+                    ChangeStats(result);
+                    break;
+                case StoryModel.Result.ResultType.GotoRandomStory:
+                    RandomStory();
+                    ChangeState(GAMESTATE.STORYSHOW);
+                    ChangeStats(result);
+                    break;
+                default:
+                    Debug.LogError("Unknown effect Type");
+                    break;
+                    
+            }
+        }
+
+        public void ChangeStats(StoryModel.Result result)
+        {
+            //기본상태
+            if (result.stats.hpPoint > 0) stats.hpPoint += result.stats.hpPoint;
+            if (result.stats.spPoint > 0) stats.spPoint += result.stats.spPoint;
+            //현재 상태
+            if (result.stats.currentHpPoint > 0) stats.currentHpPoint += result.stats.currentHpPoint;
+            if (result.stats.currentSpPoint > 0) stats.currentSpPoint += result.stats.currentSpPoint;
+            if (result.stats.currentXpPoint > 0) stats.currentXpPoint += result.stats.currentXpPoint;
+            //능력치 상태
+            if (result.stats.strength > 0) stats.strength += result.stats.strength;
+            if (result.stats.dexterity > 0) stats.dexterity += result.stats.dexterity;
+            if (result.stats.consitiution > 0) stats.consitiution += result.stats.consitiution;
+            if (result.stats.wisdom > 0) stats.wisdom += result.stats.wisdom;
+            if (result.stats.Intelligence > 0) stats.Intelligence += result.stats.Intelligence;
+            if (result.stats.charisma > 0) stats.charisma += result.stats.charisma;
+
+        }
+
+        StoryModel RandomStory()
+        {
+            StoryModel tempStoryModels = null;
+
+            List<StoryModel> storyModelList = new List<StoryModel>();
+
+            for( int i = 0; i< storyModels.Length; i++ )
+            {
+                if(storyModels[i].storyType == StoryModel.STORYTYPE.MAIN)
+                {
+                    storyModelList.Add(storyModels[i]);
+                }
+            }
+
+            tempStoryModels = storyModelList[Random.Range(0, storyModelList.Count)];
+            currentStoryIndex = tempStoryModels.storyNumber;
+            Debug.Log("currentStoryIndex" + currentStoryIndex);
+
+            return tempStoryModels;
+
+        }
+
+       
 
         private void Start()
         {
-            currentModels = FindStoryModel(6);
+            //currentModels = FindStoryModel(6);
             StartCoroutine(ShowText());
         }
 
-        StoryTableObject FindStoryModel(int number)
+
+        StoryModel FindStoryModel(int number)
         {
-            StoryTableObject tempStoryModels = null;
-            for(int i = 0; i < storyModels.Length; i++)
+            StoryModel tempStoryModels = null;
+            for (int i = 0; i < storyModels.Length; i++)
             {
                 if (storyModels[i].storyNumber == number)
                 {
@@ -87,6 +178,19 @@ namespace STROYGAME
             }
             return tempStoryModels;
         }
+        //StoryTableObject FindStoryModel(int number)
+        //{
+        //    StoryTableObject tempStoryModels = null;
+        //    for (int i = 0; i < storyModels.Length; i++)
+        //    {
+        //        if (storyModels[i].storyNumber == number)
+        //        {
+        //            tempStoryModels = storyModels[i];
+        //            break;
+        //        }
+        //    }
+        //    return tempStoryModels;
+        //}
 
         IEnumerator ShowText()
         {
@@ -105,9 +209,10 @@ namespace STROYGAME
         [ContextMenu("Reset Story Models")]
         public void ResetStoryModels()
         {
-            storyModels = Resources.LoadAll<StoryTableObject>("");
+            storyModels = Resources.LoadAll<StoryModel>("");
             //Resources 폴더 아래 모든 StoryModel 불러 오기
         }
+
 #endif
     }
 
